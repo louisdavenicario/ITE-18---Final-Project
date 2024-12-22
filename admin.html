@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Manage Candidates</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Manage Candidates for "ADMIN"</h1>
+
+        <h3>Select Role</h3>
+        <form id="uploadForm" class="mt-4">
+            <div class="form-group">
+                <label for="name">Candidate Name:</label>
+                <input type="text" class="form-control" id="name" placeholder="Enter candidate name" required>
+            </div>
+            <div class="form-group">
+                <label for="image">Candidate Image:</label>
+                <input type="file" class="form-control-file" id="image" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <label for="role">Candidate Role:</label>
+                <select class="form-control" id="role" required>
+                    <option value="">Select Role</option>
+                    <option value="President">President</option>
+                    <option value="Vice President">Vice President</option>
+                    <option value="Secretary">Secretary</option>
+                    <option value="Assistant Secretary">Assistant Secretary</option>
+                    <option value="Treasurer">Treasurer</option>
+                    <option value="Auditor">Auditor</option>
+                    <option value="Business Manager">Business Manager</option>
+                </select>
+            </div>
+            <div class="form-group" id="yearGroup" style="display: none;">
+                <label for="year">Year:</label>
+                <select class="form-control" id="year">
+                    <option value="">Select Year</option>
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Candidate</button>
+        </form>
+
+        <div class="list-group mt-5" id="candidatesList"></div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById("uploadForm");
+        const roleSelect = document.getElementById("role");
+        const yearGroup = document.getElementById("yearGroup");
+        const yearSelect = document.getElementById("year");
+        const candidatesList = document.getElementById("candidatesList");
+
+        const rolesRequiringYear = [
+            "President", "Vice President", "Secretary", 
+            "Assistant Secretary", "Treasurer", "Auditor", "Business Manager"
+        ];
+
+        const getCandidates = () => JSON.parse(localStorage.getItem("candidates")) || [];
+        const saveCandidates = (candidates) => localStorage.setItem("candidates", JSON.stringify(candidates));
+
+        const renderCandidates = () => {
+            candidatesList.innerHTML = "";
+            const candidates = getCandidates();
+
+            candidates.forEach(candidate => {
+                const candidateItem = document.createElement("div");
+                candidateItem.classList.add("list-group-item", "d-flex", "align-items-center", "justify-content-between");
+
+                candidateItem.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <img src="${candidate.image}" class="candidate-image mr-3" alt="${candidate.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%;">
+                        <span>
+                            ${candidate.name} (${candidate.role}) 
+                            ${candidate.year ? `<br><small>${candidate.year}</small>` : ""}
+                        </span>
+                    </div>
+                    <button class="btn btn-danger btn-sm delete-btn">Delete</button>
+                `;
+
+                candidateItem.querySelector(".delete-btn").addEventListener("click", () => {
+                    const updatedCandidates = getCandidates().filter(c => c.name !== candidate.name);
+                    saveCandidates(updatedCandidates);
+                    renderCandidates();
+                });
+
+                candidatesList.appendChild(candidateItem);
+            });
+        };
+
+
+        roleSelect.addEventListener("change", () => {
+            if (rolesRequiringYear.includes(roleSelect.value)) {
+                yearGroup.style.display = "block";
+                yearSelect.setAttribute("required", "required");
+            } else {
+                yearGroup.style.display = "none";
+                yearSelect.removeAttribute("required");
+            }
+        });
+
+        uploadForm.addEventListener("submit", event => {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value;
+            const file = document.getElementById("image").files[0];
+            const role = roleSelect.value;
+            const year = yearSelect.value;
+
+            if (name && file && role) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const newCandidate = {
+                        name, 
+                        image: reader.result, 
+                        role, 
+                        year: rolesRequiringYear.includes(role) ? year : null
+                    };
+                    const candidates = getCandidates();
+                    candidates.push(newCandidate);
+                    saveCandidates(candidates);
+                    renderCandidates();
+                    uploadForm.reset();
+                    yearGroup.style.display = "none";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        renderCandidates();
+    </script>
+</body>
+</html>
